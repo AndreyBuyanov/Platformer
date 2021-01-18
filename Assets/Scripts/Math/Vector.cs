@@ -3,66 +3,30 @@
 namespace Math
 {
 
-    internal class ArrayView
-    {
-        private ArraySegment<double> _slice;
-
-        public ArrayView(ArraySegment<double> slice)
-        {
-            _slice = slice;
-        }
-        public double this[int i]
-        {
-            get
-            {
-                return _slice.Array[_slice.Offset + i];
-            }
-            set
-            {
-                _slice.Array[_slice.Offset + i] = value;
-            }
-        }
-
-        public uint Length
-        {
-            get
-            {
-                return (uint)_slice.Count;
-            }
-        }
-    }
-
     public class Vector
     {
         private double[] _data;
-        private ArrayView _view;
         public delegate double Functor(double value);
 
         public Vector(double[] data)
         {
             _data = data;
-            _view = new ArrayView(new ArraySegment<double>(_data, 0, _data.Length));
         }
+
         public Vector(uint size)
         {
             _data = new double[size];
-            _view = new ArrayView(new ArraySegment<double>(_data, 0, _data.Length));
-        }
-
-        public Vector(ArraySegment<double> slice)
-        {
-            _view = new ArrayView(slice);
         }
 
         public double this[int i]
         {
             get
             {
-                return _view[i];
+                return _data[i];
             }
             set
             {
-                _view[i] = value;
+                _data[i] = value;
             }
         }
 
@@ -70,7 +34,7 @@ namespace Math
         {
             get
             {
-                return _view.Length;
+                return (uint)_data.Length;
             }
         }
 

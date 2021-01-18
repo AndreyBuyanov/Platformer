@@ -19,119 +19,136 @@ public class Scene : MonoBehaviour
     [SerializeField]
     private double stddev = 0.1;
 
-    private GameObject[] _playersObjects;
-    private Player[] _players;
     private Camera _camera;
-    private GA.Population _population;
+
+    private struct PlayerData
+    {
+        public GameObject playerObject;
+        public Player player;
+    }
+
+    private PlayerData[] _players;
+    
     private GA.GeneticAlgorithm _ga;
 
     private bool _initialized = false;
 
-    void Start()
+    private void InitPlayers()
     {
-        _playersObjects = new GameObject[PopulationSize];
-        _players = new Player[PopulationSize];
-        for (int i = 0; i < _playersObjects.Length; i++)
+        _players = new PlayerData[PopulationSize];
+        for (int i = 0; i < _players.Length; i++)
         {
-            _playersObjects[i] = Instantiate(PlayerPrefab);
-            _players[i] = _playersObjects[i].GetComponent<Player>();
-            _players[i].Init(NNTopology);
+            _players[i].playerObject = Instantiate(PlayerPrefab);
+            _players[i].player = _players[i].playerObject.GetComponent<Player>();
+            _players[i].player.Init(NNTopology);
         }
-        Reset();
-        _camera = GetComponentInChildren<Camera>();
-        _population = new GA.Population(PopulationSize, _players[0].nn.WeightsCount);
-        _ga = new GA.GeneticAlgorithm(
-            tournamentSize, swapChance, mutationChance, stddev, new System.Random());
-        _initialized = true;
     }
 
-    private void Reset()
+    private void ResetPlayers()
     {
-        for (int i = 0; i < _playersObjects.Length; i++)
+        for (int i = 0; i < _players.Length; i++)
         {
-            if (_playersObjects[i])
+            if (_players[i].playerObject)
             {
-                _playersObjects[i].transform.position = new Vector3(-7.5f, -3f, -1f);
-                _playersObjects[i].SetActive(true);
-                _players[i].IsAlive = true;
+                _players[i].playerObject.transform.position = new Vector3(-7.5f, -3f, -1f);
+                _players[i].playerObject.SetActive(true);
+                _players[i].player.Alive = true;
             }
         }
+    }
+
+    private bool PopulationAlive()
+    {
+        bool alive = false;
+        for (int i = 0; i < _players.Length; i++)
+        {
+            if (_players[i].player.Alive)
+            {
+                alive = true;
+                break;
+            }
+        }
+        return alive;
+    }
+
+    private void ProcessPlayers()
+    {
+        for (int i = 0; i < _players.Length; i++)
+        {
+            if (_players[i].playerObject.transform.position.y < -5.0f)
+            {
+                _players[i].playerObject.SetActive(false);
+                _players[i].player.Alive = false;
+            }
+            else if (!_players[i].player.Alive)
+            {
+                _players[i].playerObject.SetActive(false);
+            }
+        }
+    }
+
+    private void ProcessCamera()
+    {
+        var alivePlayers = _players.Where(p => p.player.Alive);
+        if (alivePlayers.Count() > 0)
+        {
+            float bestX = alivePlayers.Max(p => p.playerObject.transform.position.x);
+            var best = alivePlayers.Where(p => p.playerObject.transform.position.x == bestX).First();
+            _camera.transform.position = new Vector3(
+                best.playerObject.transform.position.x,
+                best.playerObject.transform.position.y,
+                _camera.transform.position.z);
+        }
+    }
+
+    void Start()
+    {
+        _camera = GetComponentInChildren<Camera>();
+
+        InitPlayers();
+        ResetPlayers();
+
+        _ga = new GA.GeneticAlgorithm(
+            tournamentSize, swapChance, mutationChance, stddev, new System.Random());
+
+        _initialized = true;
     }
 
     void FixedUpdate()
     {
         if (!_initialized)
+        {
             return;
-        for (int i = 0; i < _playersObjects.Length; i++)
-        {
-            if (_playersObjects[i].transform.position.y < -5.0f)
-            {
-                _playersObjects[i].SetActive(false);
-                _players[i].IsAlive = false;
-            }
-            else if (!_players[i].IsAlive)
-            {
-                _playersObjects[i].SetActive(false);
-            }
         }
-        bool reset = true;
-        for (int i = 0; i < _playersObjects.Length; i++)
-        {
-            if (_players[i].IsAlive)
-            {
-                reset = false;
-                break;
-            }
-        }
-        var alivePlayers = _players.Where(p => p.IsAlive);
-        if (alivePlayers.Count() > 0) {
-            float bestX = alivePlayers.Max(p => p.transform.position.x);
-            var best = alivePlayers.Where(p => p.transform.position.x == bestX).First();
-            if (best)
-            {
-                _camera.transform.position = new Vector3(
-                    best.transform.position.x,
-                    best.transform.position.y,
-                    _camera.transform.position.z);
-            }
-        }
-        if (reset)
-        {
-            for (int p = 0; p < _players.Length; p++)
-            {
-                _population[p].Fitness = _players[p].transform.position.x;
-                int pos = 0;
-                for (int l = 0; l < _players[p].nn.LayersCount; l++)
-                {
-                    for (int r = 0; r < _players[p].nn[l].Rows; r++)
-                    {
-                        for (int c = 0; c < _players[p].nn[l].Cols; c++)
-                        {
-                            _population[p][pos++] = _players[p].nn[l][r][c];
-                        }
-                    }
-                   
-                }
-            }
-            _ga.Run(_population);
-            for (int p = 0; p < _players.Length; p++)
-            {
-                int pos = 0;
-                for (int l = 0; l < _players[p].nn.LayersCount; l++)
-                {
-                    for (int r = 0; r < _players[p].nn[l].Rows; r++)
-                    {
-                        for (int c = 0; c < _players[p].nn[l].Cols; c++)
-                        {
-                             _players[p].nn[l][r][c] = _population[p][pos++];
-                        }
-                    }
 
-                }
+        ProcessPlayers();
+
+        ProcessCamera();
+
+        if (!PopulationAlive())
+        {
+            for (int p = 0; p < _players.Length; p++)
+            {
+                _players[p].player.Individual.Fitness = _players[p].playerObject.transform.position.x;
             }
-            Reset();
+
+            List<GA.Individual> population = new List<GA.Individual>();
+            for (int p = 0; p < _players.Length; p++)
+            {
+                population.Add(_players[p].player.Individual);
+            }
+
+            _ga.Run(population);
+
+            for (int p = 0; p < _players.Length; p++)
+            {
+                _players[p].player.Individual = population[p];
+                _players[p].player.FitWeights();
+            }
+
+            ResetPlayers();
         }
-        
+
     }
 
 

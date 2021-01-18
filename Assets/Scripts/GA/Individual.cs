@@ -2,7 +2,7 @@
 
 namespace GA
 {
-    public class Individual: IComparable<Individual>, ICloneable
+    public class Individual: IComparable, ICloneable
     {
         private double[] _genes;
 
@@ -25,11 +25,6 @@ namespace GA
             _genes = new double[genesCount];
         }
 
-        public Individual(double[] genes)
-        {
-            _genes = genes;
-        }
-
         public double this[int i]
         {
             get
@@ -42,10 +37,10 @@ namespace GA
             }
         }
 
-        // IComparable<Individual>
-        public int CompareTo(Individual other)
+        // IComparable
+        public int CompareTo(object other)
         {
-            return other.Fitness.CompareTo(-Fitness);
+            return (other as Individual).Fitness.CompareTo(-Fitness);
         }
 
         // ICloneable

@@ -4,33 +4,29 @@ namespace Math
 {
     public class Matrix
     {
-        private double[] _data;
-        private uint _rows;
-        private uint _cols;
+        private Vector[] _data;
 
         public Matrix(uint rows, uint cols)
         {
-            _rows = rows;
-            _cols = cols;
-            _data = new double[rows * cols];
+            _data = new Vector[rows];
+            for (int r = 0; r < rows; r++)
+            {
+                _data[r] = new Vector(cols);
+            }
         }
 
         public Vector this[int index]
         {
             get
             {
-                return new Vector(new ArraySegment<double>(_data, (int)(index * _cols), (int)_cols));
+                return _data[index];
             }
             set
             {
-                Vector vector = value;
-                if (vector.Length != _cols) {
+                if (value.Length != Cols) {
                     throw new IndexOutOfRangeException("");
                 }
-                for (int i = 0; i < _cols; i++)
-                {
-                    _data[index * _cols + i] = vector[i];
-                }
+                _data[index] = value;
             }
         }
 
@@ -38,7 +34,7 @@ namespace Math
         {
             get
             {
-                return _rows;
+                return (uint)_data.Length;
             }
         }
 
@@ -46,23 +42,7 @@ namespace Math
         {
             get
             {
-                return _cols;
-            }
-        }
-
-        public double[] Data
-        {
-            get
-            {
-                return _data;
-            }
-            set
-            {
-                double[] array = value;
-                if (array.Length != _data.Length) {
-                    throw new IndexOutOfRangeException("");
-                }
-                _data = array;
+                return (uint)_data[0].Length;
             }
         }
 

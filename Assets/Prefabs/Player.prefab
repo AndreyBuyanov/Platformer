@@ -2382,7 +2382,7 @@ MonoBehaviour:
   speed: 2
   jumpForce: 4
   jumpThreshold: 0
-  aliveTime: 30000
+  aliveTime: 20000
 --- !u!1 &4964257655949357555
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Linq;
+using System.Collections.Generic;
 
 namespace GA
 {
@@ -14,12 +14,12 @@ namespace GA
             _random = random;
         }
 
-        public Individual Select(Population population)
+        public Individual Select(List<Individual> population)
         {
             Individual[] selectedIndividuals = new Individual[_size];
             for (int i = 0; i < selectedIndividuals.Length; i++)
             {
-                selectedIndividuals[i] = population[_random.Next(0, (int)population.Size - 1)];
+                selectedIndividuals[i] = population[_random.Next(0, (int)population.Count - 1)];
             }
             Array.Sort(selectedIndividuals);
             return selectedIndividuals[selectedIndividuals.Length - 1];
@@ -116,18 +116,22 @@ namespace GA
             _mutator = new GaussianMutator(mutationChance, stddev, random);
         }
 
-        public void Run(Population population)
+        public void Run(List<Individual> population)
         {
-            Population oldPopulation = (Population)population.Clone();
-            Population parents = new Population(population.Size);
-
-            for (int i = 0; i < parents.Size; i++)
+            List<Individual> oldPopulation = new List<Individual>();
+            foreach (var individual in population)
             {
-                parents[i] = _selector.Select(oldPopulation);
+                oldPopulation.Add((Individual)individual.Clone());
             }
 
-            bool isEven = population.Size % 2 == 0;
-            uint populationSize = isEven ? population.Size : population.Size - 1;
+            List<Individual> parents = new List<Individual>();
+            foreach (var individual in oldPopulation)
+            {
+                parents.Add(_selector.Select(oldPopulation));
+            }
+
+            bool isEven = population.Count % 2 == 0;
+            uint populationSize = isEven ? (uint)population.Count : (uint)(population.Count - 1);
             for (int i = 0; i < populationSize; i += 2)
             {
                 var childrens = _recombinator.Recombine((parents[i], parents[i + 1]));
@@ -135,12 +139,12 @@ namespace GA
                 population[i + 1] = childrens.Item2;
             }
             if (!isEven) {
-                population[(int)population.Size - 1] = parents[(int)population.Size - 1];
+                population[(int)population.Count - 1] = parents[(int)population.Count - 1];
             }
 
-            for (int i = 0; i < population.Size; i++)
+            foreach (var individual in population)
             {
-                _mutator.Mutate(population[i]);
+                _mutator.Mutate(individual);
             }
         }
     }

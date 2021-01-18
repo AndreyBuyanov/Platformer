@@ -9,7 +9,7 @@ public class Sensor : MonoBehaviour
     [SerializeField]
     private SpriteRenderer Cross;
     
-    private const float MAX_DIST = 5f;
+    private const float MAX_DIST = 10f;
     private const float MIN_DIST = 0.01f;
 
     public float Output
